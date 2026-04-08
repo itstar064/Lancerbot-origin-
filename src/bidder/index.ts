@@ -1,5 +1,5 @@
 import config from "@/config";
-import { login, useRealBrowser } from "@/scraper";
+// import { login, useRealBrowser } from "@/scraper";
 import { delay } from "@/utils";
 import { existsSync, mkdirSync } from "fs";
 import OpenAI from "openai";
@@ -28,54 +28,54 @@ const systemPrompt = `求人広告の入札文を作成する際は、できる�
 入札では箇条書きやダッシュを使用しないでください。段落形式で記入してください。`;
 
 export const placeBid = async (jobid) => {
-  try {
-    const jobUrl = `${basicUrl}${jobid}`;
-    const { browser, page } = await useRealBrowser();
-    try {
-      await page!.setViewport({ width: 1220, height: 860 });
-      await login(page!);
-      await delay(3000);
-    } catch (err) {
-      console.error("Error setting viewport:", (err as Error).message);
-    }
+  // try {
+  //   const jobUrl = `${basicUrl}${jobid}`;
+  //   const { browser, page } = await useRealBrowser();
+  //   try {
+  //     await page!.setViewport({ width: 1220, height: 860 });
+  //     await login(page!);
+  //     await delay(3000);
+  //   } catch (err) {
+  //     console.error("Error setting viewport:", (err as Error).message);
+  //   }
 
-    await page.goto(jobUrl, {
-      waitUntil: "domcontentloaded",
-    });
+  //   await page.goto(jobUrl, {
+  //     waitUntil: "domcontentloaded",
+  //   });
 
-    const description = await page.$eval(
-      ".description",
-      (el) => el.textContent?.trim() || "",
-    );
-    const bidText = await generateBidText(description);
-    await page.waitForSelector(
-      'input[type="radio"][value=true][name="without_condition"]',
-    );
-    await page.click(
-      'input[type="radio"][value=true][name="without_condition"]',
-    ); // Select the first radio button for bid type
+  //   const description = await page.$eval(
+  //     ".description",
+  //     (el) => el.textContent?.trim() || "",
+  //   );
+  //   const bidText = await generateBidText(description);
+  //   await page.waitForSelector(
+  //     'input[type="radio"][value=true][name="without_condition"]',
+  //   );
+  //   await page.click(
+  //     'input[type="radio"][value=true][name="without_condition"]',
+  //   ); // Select the first radio button for bid type
 
-    await page.type("textarea", bidText);
+  //   await page.type("textarea", bidText);
 
-    await page.waitForSelector('input[type="submit"][name="commit"]');
-    await page.click('input[type="submit"][name="commit"]');
+  //   await page.waitForSelector('input[type="submit"][name="commit"]');
+  //   await page.click('input[type="submit"][name="commit"]');
 
-    // Ensure the screenshots directory exists before saving the screenshot
-    const screenshotsDir = `${process.cwd()}/screenshots`;
-    if (!existsSync(screenshotsDir)) {
-      mkdirSync(screenshotsDir, { recursive: true });
-    }
-    await page.screenshot({
-      path: `${screenshotsDir}/bid.png`,
-    });
+  //   // Ensure the screenshots directory exists before saving the screenshot
+  //   const screenshotsDir = `${process.cwd()}/screenshots`;
+  //   if (!existsSync(screenshotsDir)) {
+  //     mkdirSync(screenshotsDir, { recursive: true });
+  //   }
+  //   await page.screenshot({
+  //     path: `${screenshotsDir}/bid.png`,
+  //   });
 
-    await delay(2000); // Wait for 2 seconds before clicking the submit button
+  //   await delay(2000); // Wait for 2 seconds before clicking the submit button
 
-    await page.close();
-    await browser.close();
-  } catch (error) {
-    console.error("Error placing bid:", error);
-  }
+  //   await page.close();
+  //   await browser.close();
+  // } catch (error) {
+  //   console.error("Error placing bid:", error);
+  // }
 };
 
 const generateBidText = async (description: string) => {

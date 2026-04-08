@@ -30,6 +30,8 @@
   "description": "Upwork Job Notification Bot For Freelancers using node.js",
   "dependencies": {
     "@eslint/js": "^9.26.0",
+    "axios": "^1.13.6",
+    "cheerio": "^1.2.0",
     "dotenv": "^16.5.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
@@ -38,6 +40,7 @@
     "mongoose": "^8.14.3",
     "nodemon": "^3.1.10",
     "openai": "^5.3.0",
+    "playwright": "^1.58.2",
     "puppeteer": "^24.8.2",
     "puppeteer-core": "^24.8.2",
     "puppeteer-extra": "^3.3.6",
