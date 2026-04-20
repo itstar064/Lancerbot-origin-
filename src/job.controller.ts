@@ -3,6 +3,13 @@ import Job from "./models/Job";
 import { ScrapedJobType } from "./types/job";
 import { delay, isEmpty } from "./utils";
 
+/** Telegram HTML mode: escape user-controlled text. */
+const escapeTelegramHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const TELEGRAM_CAPTION_MAX = 1024;
+const TELEGRAM_MESSAGE_MAX = 4096;
+
 const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
   console.log(`🔄 Processing ${jobs.length} jobs...`);
   for (let i = 0; i < jobs.length; i++) {
@@ -15,25 +22,50 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
       console.log(`✨ New job found! ID: ${jobid} - ${job.title}`);
       await Job.create({ id: jobid });
       
-      // Build message with title, category, id, period, price, and avatar
-      let message = `🔉 <b>${job.title}</b>\n\n`;
-      
+      const maxLen = job.employerAvatar
+        ? TELEGRAM_CAPTION_MAX
+        : TELEGRAM_MESSAGE_MAX;
+
+      let message = `🔉 <b>${escapeTelegramHtml(job.title)}</b>\n\n`;
+
       if (jobid) {
-        message += `<b>ID:</b> ${job.employer}\n`;
+        message += `<b>ID:</b> ${escapeTelegramHtml(job.employer)}\n`;
       }
-      
+
       if (job.category) {
-        message += `<b>カテゴリ:</b> ${job.category}\n`;
+        message += `<b>カテゴリ:</b> ${escapeTelegramHtml(job.category)}\n`;
       }
-      
+
       if (job.daysLeft) {
-        message += `<b>期間:</b> ${job.daysLeft}\n`;
+        message += `<b>期間:</b> ${escapeTelegramHtml(job.daysLeft)}\n`;
       }
-      
+
       if (job.price) {
-        message += `<b>報酬:</b> ${job.price}円\n`;
+        message += `<b>報酬:</b> ${escapeTelegramHtml(job.price)}円\n`;
       }
-      
+
+      if (job.desc) {
+        const header = "\n<b>概要:</b>\n";
+        const plain = job.desc.replace(/\s+/g, " ").trim();
+        const budget = maxLen - message.length - header.length;
+        const ellipsis = "…";
+
+        if (budget > 0 && plain) {
+          let snippet = "";
+          for (let len = plain.length; len >= 0; len--) {
+            const cand =
+              len === plain.length ? plain : plain.slice(0, len) + ellipsis;
+            if (escapeTelegramHtml(cand).length <= budget) {
+              snippet = cand;
+              break;
+            }
+          }
+          if (snippet) {
+            message += header + escapeTelegramHtml(snippet);
+          }
+        }
+      }
+
       await sendMessage(
         userid,
         message,

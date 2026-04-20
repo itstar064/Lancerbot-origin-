@@ -169,11 +169,26 @@ const parseJobsFromSearchHtml = (html: string) => {
       .replace(/\s+/g, " ")
       .trim();
 
+    // Prose summary lives in `.c-media__description` without the tag-list `<ul>`
+    // (that block is 経験者優遇 / 継続依頼あり style chips, not the job body).
+    const descriptionParts: string[] = [];
+    $card.find(".c-media__description").each((_, el) => {
+      const $el = $(el);
+      if ($el.find("ul.p-search-job-media__tag-lists").length > 0) {
+        return;
+      }
+      const text = ($el.text() || "").replace(/\s+/g, " ").trim();
+      if (text) {
+        descriptionParts.push(text);
+      }
+    });
+    const desc = descriptionParts.join("\n\n").trim();
+
     jobs.push({
       id: jobId,
       title,
       url,
-      desc: "",
+      desc,
       category,
       price,
       suggestions: proposals,
