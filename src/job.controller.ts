@@ -7,6 +7,9 @@ import { delay } from "./utils";
 const escapeTelegramHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+/** `href` attribute: `&` must be escaped for HTML parse mode. */
+const escapeHref = (s: string) => s.replace(/&/g, "&amp;");
+
 const TELEGRAM_CAPTION_MAX = 1024;
 const TELEGRAM_MESSAGE_MAX = 4096;
 
@@ -60,10 +63,15 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
         message += `<b>報酬:</b> ${escapeTelegramHtml(job.price)}円\n`;
       }
 
+      const linkFooter = job.url
+        ? `\n\n<a href="${escapeHref(job.url)}">案件ページ</a>`
+        : "";
+
       if (job.desc) {
         const header = "\n<b>概要:</b>\n";
         const plain = job.desc.replace(/\s+/g, " ").trim();
-        const budget = maxLen - message.length - header.length;
+        const budget =
+          maxLen - message.length - header.length - linkFooter.length;
         const ellipsis = "…";
 
         if (budget > 0 && plain) {
@@ -82,14 +90,11 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
         }
       }
 
-      await sendMessage(
-        userid,
-        message,
-        job.url,
-        job.employerUrl,
-        jobid,
-        job.employerAvatar,
-      );
+      if (linkFooter) {
+        message += linkFooter;
+      }
+
+      await sendMessage(userid, message, job.employerAvatar);
     } else {
       console.log(`⏭️  Job already exists, skipping. ID: ${jobid}`);
     }

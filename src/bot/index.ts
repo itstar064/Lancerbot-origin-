@@ -1,5 +1,5 @@
 import config from "@/config";
-import { Markup, Telegraf } from "telegraf";
+import { Telegraf } from "telegraf";
 import setup_commands from "./commands";
 import { isEmpty } from "@/utils";
 
@@ -10,33 +10,15 @@ setup_commands(bot);
 export const sendMessage = async (
   chatId: string,
   text: string,
-  url?: string,
-  employer?: string,
-  jobid?: string,
   avatarUrl?: string,
 ) => {
   try {
-    let extra: any = {
-      parse_mode: "HTML",
-    };
+    const extra = { parse_mode: "HTML" as const };
 
-    if (!isEmpty(url) && !isEmpty(employer)) {
-      extra = {
-        ...extra,
-        ...Markup.inlineKeyboard([
-          Markup.button.url("Explore Job", url),
-          Markup.button.url("Employer", employer),
-          Markup.button.callback("Bid", `bid_action|${jobid}`), // Pass chatId or message id as payload
-        ]),
-      };
-    }
-
-    // If avatar URL is provided, send photo with caption, otherwise send text message
     if (!isEmpty(avatarUrl)) {
       await bot.telegram.sendPhoto(chatId, avatarUrl, {
         caption: text,
         parse_mode: "HTML",
-        ...(extra.reply_markup ? { reply_markup: extra.reply_markup } : {}),
       });
     } else {
       await bot.telegram.sendMessage(chatId, text, extra);
