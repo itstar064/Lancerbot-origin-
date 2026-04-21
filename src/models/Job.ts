@@ -5,6 +5,7 @@ const JobSchema = new mongoose.Schema(
   {
     id: {
       type: String,
+      unique: true,
     },
     bidPlaced: {
       type: Boolean,

@@ -1,7 +1,7 @@
 import { sendMessage } from "./bot";
 import Job from "./models/Job";
 import { ScrapedJobType } from "./types/job";
-import { delay, isEmpty } from "./utils";
+import { delay } from "./utils";
 
 /** Telegram HTML mode: escape user-controlled text. */
 const escapeTelegramHtml = (s: string) =>
@@ -17,10 +17,26 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
     // Use job.id if available, otherwise extract from URL
     const jobid = (job as any).id || job.url.split("/").pop() || "";
     console.log(`🔍 Checking job ID: ${jobid}`);
-    const exist = await Job.findOne({ id: jobid });
-    if (isEmpty(exist)) {
+
+    // Atomic upsert avoids E11000 when two scrapes race on the same new id.
+    let inserted = false;
+    try {
+      const result = await Job.updateOne(
+        { id: jobid },
+        { $setOnInsert: { id: jobid, bidPlaced: false } },
+        { upsert: true },
+      );
+      inserted = result.upsertedCount === 1;
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        inserted = false;
+      } else {
+        throw err;
+      }
+    }
+
+    if (inserted) {
       console.log(`✨ New job found! ID: ${jobid} - ${job.title}`);
-      await Job.create({ id: jobid });
       
       const maxLen = job.employerAvatar
         ? TELEGRAM_CAPTION_MAX
