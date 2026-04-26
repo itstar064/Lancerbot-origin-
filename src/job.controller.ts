@@ -40,18 +40,7 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
 
     if (inserted) {
       console.log(`✨ New job found! ID: ${jobid} - ${job.title}`);
-
-      const refCategory = (job.category || job.title || "未分類")
-        .replace(/\s+/g, " ")
-        .trim();
-      const refDescription = (job.desc || job.title || "No description")
-        .replace(/\s+/g, " ")
-        .trim();
-      await Job.updateOne(
-        { id: jobid },
-        { $set: { refCategory, refDescription } },
-      );
-
+      
       const maxLen = job.employerAvatar
         ? TELEGRAM_CAPTION_MAX
         : TELEGRAM_MESSAGE_MAX;
@@ -105,10 +94,7 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
         message += linkFooter;
       }
 
-      await sendMessage(userid, message, {
-        avatarUrl: job.employerAvatar,
-        jobIdForRefButton: jobid,
-      });
+      await sendMessage(userid, message, job.employerAvatar);
     } else {
       console.log(`⏭️  Job already exists, skipping. ID: ${jobid}`);
     }

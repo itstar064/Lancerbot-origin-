@@ -4,7 +4,6 @@ import { Telegraf } from "telegraf";
 import { getScrapingStatus, startScraping, stopScraping } from "@/scraper";
 import { placeBid } from "@/bidder";
 import Job from "@/models/Job";
-import { handleRefSitesCallback } from "./referencesHandler";
 
 const commands: {
   command: string;
@@ -43,27 +42,19 @@ const setup_commands = async (bot: Telegraf) => {
   // Listen for callback queries (button clicks)
   bot.on("callback_query", async (ctx) => {
     try {
-      const data = (ctx.callbackQuery as { data?: string } | null)?.data;
-
-      if (data && data.startsWith("ref|")) {
-        await handleRefSitesCallback(ctx);
-        return;
-      }
-
       if (placingBid) {
         await ctx.answerCbQuery("Please wait, a bid is already being placed.");
         return;
       }
-
+      placingBid = true;
+      const data = (ctx.callbackQuery as any).data;
       if (data && data.startsWith("bid_action|")) {
-        placingBid = true;
         const [, clickedChatId] = data.split("|");
         // You now know which chat's button was clicked
         console.log("Placing bid for job: ", clickedChatId);
 
         if (isEmpty(clickedChatId)) {
           await ctx.answerCbQuery("Invalid job ID.");
-          placingBid = false;
           return;
         }
 
@@ -91,18 +82,10 @@ const setup_commands = async (bot: Telegraf) => {
         }
         placingBid = false;
         await ctx.reply("Bid placed successfully!");
-        return;
       }
-
-      await ctx.answerCbQuery();
     } catch (error) {
       placingBid = false;
       console.error("Error handling callback query:", error);
-      try {
-        await ctx.answerCbQuery("Error");
-      } catch {
-        // ignore
-      }
       await ctx.reply("An error occurred. Please try again later.");
     }
   });
