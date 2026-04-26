@@ -45,6 +45,23 @@ if (config_missing) {
   process.exit(1);
 }
 
+const plEnv = process.env.PROJECT_LINKS_API;
+const PROJECT_LINKS_API: string | undefined = (() => {
+  if (plEnv === "off" || plEnv === "false" || plEnv === "0" || plEnv === "") {
+    return undefined;
+  }
+  if (plEnv) {
+    return plEnv;
+  }
+  return "http://135.181.224.37:3000/api/project-links";
+})();
+
+const _count = parseInt(
+  process.env.PROJECT_LINKS_COUNT || "3",
+  10,
+);
+const PROJECT_LINKS_COUNT = Math.min(20, Math.max(1, _count || 3));
+
 interface Config {
   PORT: number;
   BOT_TOKEN: string;
@@ -53,6 +70,10 @@ interface Config {
   PASSWORD: string;
   ADMIN_ID: string;
   OPENAI_API: string;
+  /** POST JSON body: category, description, count — empty / off to disable */
+  PROJECT_LINKS_API: string | undefined;
+  /** Requested number of reference links (default 3, max 20) */
+  PROJECT_LINKS_COUNT: number;
   PROXY: string | undefined;
   PROXY_AUTH: { username: string; password: string } | undefined;
 }
@@ -65,6 +86,8 @@ const config: Config = {
   PASSWORD: PASSWORD!,
   ADMIN_ID: ADMIN_ID!,
   OPENAI_API: OPENAI!,
+  PROJECT_LINKS_API: PROJECT_LINKS_API,
+  PROJECT_LINKS_COUNT,
   PROXY: process.env.PROXY,
   PROXY_AUTH: process.env.PROXY_AUTH ? JSON.parse(process.env.PROXY_AUTH) : undefined,
 };

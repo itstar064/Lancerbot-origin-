@@ -1,6 +1,11 @@
-import { sendMessage } from "./bot";
+import { sendMessage, sendMessageAsReply } from "./bot";
+import config from "@/config";
 import Job from "./models/Job";
 import { ScrapedJobType } from "./types/job";
+import {
+  buildReferenceMessageParts,
+  fetchReferenceLinks,
+} from "./services/projectLinks";
 import { delay } from "./utils";
 
 /** Telegram HTML mode: escape user-controlled text. */
@@ -94,7 +99,27 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
         message += linkFooter;
       }
 
-      await sendMessage(userid, message, job.employerAvatar);
+      const mainId = await sendMessage(userid, message, job.employerAvatar);
+
+      const category = (job.category || job.title || "未分類").replace(
+        /\s+/g,
+        " ",
+      );
+      const description = (job.desc || job.title || "No description")
+        .replace(/\s+/g, " ")
+        .trim();
+      const ref = await fetchReferenceLinks(
+        category,
+        description,
+        config.PROJECT_LINKS_COUNT,
+      );
+
+      if (mainId != null && ref?.links?.length) {
+        for (const part of buildReferenceMessageParts(ref)) {
+          await sendMessageAsReply(userid, part, mainId);
+          await delay(200);
+        }
+      }
     } else {
       console.log(`⏭️  Job already exists, skipping. ID: ${jobid}`);
     }
