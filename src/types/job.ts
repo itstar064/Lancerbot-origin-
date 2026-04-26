@@ -1,6 +1,9 @@
 interface JobType {
   id: string;
   bidPlaced: boolean;
+  /** Lancers カテゴリ / 概要 — for PROJECT_LINKS_API on demand */
+  refCategory?: string;
+  refDescription?: string;
 }
 
 export interface ScrapedJobType {

@@ -11,6 +11,8 @@ const JobSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    refCategory: { type: String, required: false },
+    refDescription: { type: String, required: false },
   },
   {
     timestamps: true,

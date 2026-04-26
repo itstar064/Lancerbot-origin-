@@ -1,11 +1,6 @@
-import { sendMessage, sendMessageAsReply } from "./bot";
-import config from "@/config";
+import { sendMessage } from "./bot";
 import Job from "./models/Job";
 import { ScrapedJobType } from "./types/job";
-import {
-  buildReferenceMessageParts,
-  fetchReferenceLinks,
-} from "./services/projectLinks";
 import { delay } from "./utils";
 
 /** Telegram HTML mode: escape user-controlled text. */
@@ -45,7 +40,18 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
 
     if (inserted) {
       console.log(`✨ New job found! ID: ${jobid} - ${job.title}`);
-      
+
+      const refCategory = (job.category || job.title || "未分類")
+        .replace(/\s+/g, " ")
+        .trim();
+      const refDescription = (job.desc || job.title || "No description")
+        .replace(/\s+/g, " ")
+        .trim();
+      await Job.updateOne(
+        { id: jobid },
+        { $set: { refCategory, refDescription } },
+      );
+
       const maxLen = job.employerAvatar
         ? TELEGRAM_CAPTION_MAX
         : TELEGRAM_MESSAGE_MAX;
@@ -99,27 +105,10 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
         message += linkFooter;
       }
 
-      const mainId = await sendMessage(userid, message, job.employerAvatar);
-
-      const category = (job.category || job.title || "未分類").replace(
-        /\s+/g,
-        " ",
-      );
-      const description = (job.desc || job.title || "No description")
-        .replace(/\s+/g, " ")
-        .trim();
-      const ref = await fetchReferenceLinks(
-        category,
-        description,
-        config.PROJECT_LINKS_COUNT,
-      );
-
-      if (mainId != null && ref?.links?.length) {
-        for (const part of buildReferenceMessageParts(ref)) {
-          await sendMessageAsReply(userid, part, mainId);
-          await delay(200);
-        }
-      }
+      await sendMessage(userid, message, {
+        avatarUrl: job.employerAvatar,
+        jobIdForRefButton: jobid,
+      });
     } else {
       console.log(`⏭️  Job already exists, skipping. ID: ${jobid}`);
     }
