@@ -53,17 +53,23 @@ interface Config {
   PASSWORD: string;
   ADMIN_ID: string;
   OPENAI_API: string;
-  /** Only notify Telegram when scraped 報酬 max amount is >= this (yen). */
-  MIN_TELEGRAM_REPORT_YEN: number;
+  /**
+   * When set (yen), Telegram only notifies jobs whose scraped 報酬 parses to max >= this.
+   * When unset, every new job is notified.
+   */
+  TELEGRAM_NOTIFY_MIN_YEN: number | undefined;
   PROXY: string | undefined;
   PROXY_AUTH: { username: string; password: string } | undefined;
 }
 
-const minTelegramYenRaw = process.env.MIN_TELEGRAM_REPORT_YEN;
-const MIN_TELEGRAM_REPORT_YEN =
-  minTelegramYenRaw !== undefined && minTelegramYenRaw !== ""
-    ? Number(minTelegramYenRaw)
-    : 200_000;
+const minYenRaw =
+  process.env.TELEGRAM_NOTIFY_MIN_YEN ?? process.env.MIN_TELEGRAM_REPORT_YEN;
+const minYenParsed =
+  minYenRaw !== undefined && minYenRaw !== "" ? Number(minYenRaw) : NaN;
+const TELEGRAM_NOTIFY_MIN_YEN =
+  Number.isFinite(minYenParsed) && minYenParsed > 0
+    ? minYenParsed
+    : undefined;
 
 const config: Config = {
   PORT: Number(PORT),
@@ -73,9 +79,7 @@ const config: Config = {
   PASSWORD: PASSWORD!,
   ADMIN_ID: ADMIN_ID!,
   OPENAI_API: OPENAI!,
-  MIN_TELEGRAM_REPORT_YEN: Number.isFinite(MIN_TELEGRAM_REPORT_YEN)
-    ? MIN_TELEGRAM_REPORT_YEN
-    : 200_000,
+  TELEGRAM_NOTIFY_MIN_YEN,
   PROXY: process.env.PROXY,
   PROXY_AUTH: process.env.PROXY_AUTH ? JSON.parse(process.env.PROXY_AUTH) : undefined,
 };

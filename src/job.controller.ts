@@ -42,11 +42,13 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
     if (inserted) {
       console.log(`✨ New job found! ID: ${jobid} - ${job.title}`);
 
+      const minYen = config.TELEGRAM_NOTIFY_MIN_YEN;
       if (
-        !meetsMinTelegramReportYen(job.price, config.MIN_TELEGRAM_REPORT_YEN)
+        minYen != null &&
+        !meetsMinTelegramReportYen(job.price, minYen)
       ) {
         console.log(
-          `⏭️  Below Telegram threshold (>= ${config.MIN_TELEGRAM_REPORT_YEN}円 max 報酬), skip notify. ID: ${jobid} raw:「${job.price}」`,
+          `⏭️  Below Telegram threshold (>= ${minYen}円 max 報酬), skip notify. ID: ${jobid} raw:「${job.price}」`,
         );
         await delay(200);
         continue;
