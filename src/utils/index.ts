@@ -34,3 +34,43 @@ export const formatDate = (date: Date) => {
     second: "2-digit",
   }).format(date);
 };
+
+/**
+ * Largest yen amount implied by Lancers search-card 報酬 text (e.g. "200,000", "10万~30万").
+ * Used to filter Telegram alerts without skipping DB deduplication.
+ */
+export function parseLancersPriceMaxYen(price: string): number | null {
+  if (!price || !String(price).trim()) return null;
+  const normalized = String(price)
+    .replace(/[～〜–—]/g, "~")
+    .replace(/\s/g, "")
+    .trim();
+
+  const values: number[] = [];
+  const manRegex = /(\d+(?:\.\d+)?)万/g;
+  let m: RegExpExecArray | null;
+  while ((m = manRegex.exec(normalized)) !== null) {
+    values.push(Math.round(parseFloat(m[1]) * 10_000));
+  }
+
+  const rest = normalized.replace(/(\d+(?:\.\d+)?)万/g, "");
+  const numMatches = rest.match(/\d{1,3}(?:,\d{3})+|\d+/g);
+  if (numMatches) {
+    for (const raw of numMatches) {
+      const n = parseInt(raw.replace(/,/g, ""), 10);
+      if (!Number.isNaN(n)) values.push(n);
+    }
+  }
+
+  if (values.length === 0) return null;
+  return Math.max(...values);
+}
+
+export function meetsMinTelegramReportYen(
+  price: string,
+  minYen: number,
+): boolean {
+  const maxYen = parseLancersPriceMaxYen(price);
+  if (maxYen == null) return false;
+  return maxYen >= minYen;
+}

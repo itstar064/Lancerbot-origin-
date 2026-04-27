@@ -1,7 +1,8 @@
+import config from "./config";
 import { sendMessage } from "./bot";
 import Job from "./models/Job";
 import { ScrapedJobType } from "./types/job";
-import { delay } from "./utils";
+import { delay, meetsMinTelegramReportYen } from "./utils";
 
 /** Telegram HTML mode: escape user-controlled text. */
 const escapeTelegramHtml = (s: string) =>
@@ -40,7 +41,17 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
 
     if (inserted) {
       console.log(`✨ New job found! ID: ${jobid} - ${job.title}`);
-      
+
+      if (
+        !meetsMinTelegramReportYen(job.price, config.MIN_TELEGRAM_REPORT_YEN)
+      ) {
+        console.log(
+          `⏭️  Below Telegram threshold (>= ${config.MIN_TELEGRAM_REPORT_YEN}円 max 報酬), skip notify. ID: ${jobid} raw:「${job.price}」`,
+        );
+        await delay(200);
+        continue;
+      }
+
       const maxLen = job.employerAvatar
         ? TELEGRAM_CAPTION_MAX
         : TELEGRAM_MESSAGE_MAX;
